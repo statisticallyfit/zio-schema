@@ -1,3 +1,17 @@
+# My additions @statisticallyfit
+project/.boot/
+project/.sbtboot/
+project/.ivy/
+project/target
+project/project/
+target
+.idea
+.history
+.bsp/
+
+
+
+
 # Dropbox settings and caches
 .dropbox
 .dropbox.attr

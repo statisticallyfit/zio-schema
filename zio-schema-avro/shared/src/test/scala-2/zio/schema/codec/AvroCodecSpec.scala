@@ -1,16 +1,15 @@
 package zio.schema.codec
 
 import java.util.UUID
-
 import scala.collection.immutable.ListMap
 import scala.util.Try
-
 import zio.schema.Schema._
 import zio.schema._
-import zio.schema.codec.AvroAnnotations.{ BytesType, DecimalType, FieldOrderType }
+import zio.schema.codec.AvroAnnotations.{BytesType, DecimalType, FieldOrderType}
+import zio.schema.codec.SpecTestData.UnionWithNesting.Nested
 import zio.test.Assertion._
 import zio.test._
-import zio.{ Chunk, Scope }
+import zio.{Chunk, Scope}
 
 object AvroCodecSpec extends ZIOSpecDefault {
   import AssertionHelper._
@@ -21,6 +20,10 @@ object AvroCodecSpec extends ZIOSpecDefault {
       suite("encode")(
         suite("enum")(
           test("encodes string only enum as avro enum") {
+
+			Console.println("TEST: encodes string only enum as avro enum")
+
+
             val caseA = Schema.Case[String, String](
               "A",
               Schema.primitive(StandardType.StringType),
@@ -28,6 +31,8 @@ object AvroCodecSpec extends ZIOSpecDefault {
               identity,
               _.isInstanceOf[String]
             )
+			Console.println(s"caseA = Schema.Case[String, String] \n\t= $caseA")
+
             val caseB = Schema.Case[String, String](
               "B",
               Schema.primitive(StandardType.StringType),
@@ -35,6 +40,8 @@ object AvroCodecSpec extends ZIOSpecDefault {
               identity,
               _.isInstanceOf[String]
             )
+			Console.println(s"caseB = Schema.Case[String, String] = \n\t$caseB")
+
             val caseC = Schema.Case[String, String](
               "C",
               Schema.primitive(StandardType.StringType),
@@ -42,16 +49,27 @@ object AvroCodecSpec extends ZIOSpecDefault {
               identity,
               _.isInstanceOf[String]
             )
-            val schema = Schema.Enum3(TypeId.Structural, caseA, caseB, caseC, Chunk(AvroAnnotations.name("MyEnum")))
+			Console.println(s"caseC = Schema.Case[String, String] = \n\t$caseC")
 
-            val result = AvroCodec.encode(schema)
 
-            val expected = """{"type":"enum","name":"MyEnum","symbols":["A","B","C"]}"""
+            val schema: Enum3[String, String, String, String] = Schema.Enum3(TypeId.Structural, caseA, caseB, caseC, Chunk(AvroAnnotations.name("MyEnum")))
+
+            Console.println(s"val schema = Schema.Enum3(TypeId.Structural, caseA, caseB, caseC, " +
+			  s"Chunk(AvroAnnotations.name('MyEnum'))) \n\t= $schema")
+
+            val result: scala.Either[String, String] = AvroCodec.encode(schema)
+
+            val expected: String = """{"type":"enum","name":"MyEnum","symbols":["A","B","C"]}"""
             assert(result)(isRight(equalTo(expected)))
           },
           test("encodes sealed trait objects only as union of records when no avroEnum annotation is present") {
 
-            val schema = DeriveSchema.gen[SpecTestData.CaseObjectsOnlyAdt]
+
+			Console.println("TEST: encodes sealed trait objects only as union of records when no avroEnum annotation is present")
+
+            val schema: Schema[CaseObjectsOnlyAdt] = DeriveSchema.gen[SpecTestData.CaseObjectsOnlyAdt]
+            Console.println(s"val schema = DeriveSchema.gen[SpecTestData.CaseObjectsOnlyAdt] \n\t= $schema")
+
             val result = AvroCodec.encode(schema)
 
             val expected =
@@ -60,12 +78,19 @@ object AvroCodecSpec extends ZIOSpecDefault {
           },
           test("encodes sealed trait objects only as enum when avroEnum annotation is present") {
 
+			Console.println("TEST: encodes sealed trait objects only as enum when avroEnum annotation is present")
+
             val schema = DeriveSchema.gen[SpecTestData.CaseObjectsOnlyAdt].annotate(AvroAnnotations.avroEnum)
+			Console.println(s"val schema = DeriveSchema.gen[SpecTestData.CaseObjectsOnlyAdt].annotate" +
+				s"(AvroAnnotations.avroEnum) \n\t= $schema")
+
             val result = AvroCodec.encode(schema)
 
             val expected = """{"type":"enum","name":"MyEnum","symbols":["A","B","MyC"]}"""
             assert(result)(isRight(equalTo(expected)))
           },
+
+		   // TODO left off here
           test("ignores avroEnum annotation if ADT cannot be reduced to String symbols") {
             val schema = DeriveSchema.gen[SpecTestData.CaseObjectAndCaseClassAdt]
             val result = AvroCodec.encode(schema)
@@ -83,12 +108,24 @@ object AvroCodecSpec extends ZIOSpecDefault {
             assert(result)(isRight(equalTo(expected)))
           },
           test("wraps nested unions") {
-            val schemaA = DeriveSchema.gen[UnionWithNesting.Nested.A.type]
-            val schemaB = DeriveSchema.gen[UnionWithNesting.Nested.B.type]
-            val schemaC = DeriveSchema.gen[UnionWithNesting.C.type]
-            val schemaD = DeriveSchema.gen[UnionWithNesting.D]
 
-            val nested: Enum2[UnionWithNesting.Nested.A.type, UnionWithNesting.Nested.B.type, UnionWithNesting.Nested] =
+			Console.println("TEST: wraps nested unions")
+
+            val schemaA: Schema[Nested.A.type] = DeriveSchema.gen[UnionWithNesting.Nested.A.type]
+            val schemaB: Schema[Nested.B.type] = DeriveSchema.gen[UnionWithNesting.Nested.B.type]
+            val schemaC = DeriveSchema.gen[UnionWithNesting.C.type]
+            val schemaD = DeriveSchema.gen[UnionWithNesting.D] // TODO - why doesn't it say D.type here like all above?
+
+			Console.println(s"val schemaA = DeriveSchema.gen[UnionWithNesting.Nested.A.type]" +
+				s"\n\t = $schemaA")
+			Console.println(s"val schemaB = DeriveSchema.gen[UnionWithNesting.Nested.B.type]" +
+				s"\n\t = $schemaB")
+			Console.println(s"val schemaC = DeriveSchema.gen[UnionWithNesting.Nested.C.type]" +
+				s"\n\t = $schemaC")
+			Console.println(s"val schemaD = DeriveSchema.gen[UnionWithNesting.Nested.D]" +
+				s"\n\t = $schemaD")
+
+            val nested: Enum2[UnionWithNesting.Nested.A.type, UnionWithNesting.Nested.B.type, UnionWithNesting.Nested] = {
               Schema.Enum2(
                 TypeId.Structural,
                 Schema.Case[UnionWithNesting.Nested, UnionWithNesting.Nested.A.type](
@@ -106,7 +143,13 @@ object AvroCodecSpec extends ZIOSpecDefault {
                   _.isInstanceOf[UnionWithNesting.Nested.B.type]
                 )
               )
-            val unionWithNesting = Schema.Enum3(
+
+		  }
+			Console.println(s"val nested: Enum2[UnionWithNesting.Nested.A.type, UnionWithNesting.Nested.B.type, " +
+				s"UnionWithNesting.Nested]" +
+				s"\n\t = $nested")
+
+			val unionWithNesting = Schema.Enum3(
               TypeId.Structural,
               Schema.Case[UnionWithNesting, UnionWithNesting.Nested](
                 "Nested",
@@ -131,6 +174,10 @@ object AvroCodecSpec extends ZIOSpecDefault {
                 _.isInstanceOf[UnionWithNesting.D]
               )
             )
+
+			Console.println(s"val unionWithNesting = Schema.Enum3(TypeId.Structural,Schema.Case[UnionWithNesting, " +
+				s"UnionWithNesting.Nested]" +
+				s"\n\t = $unionWithNesting")
 
             val schema = unionWithNesting
             val result = AvroCodec.encode(schema)

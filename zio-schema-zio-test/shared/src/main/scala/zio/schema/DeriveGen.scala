@@ -74,6 +74,9 @@ object DeriveGen {
       case _                                                                                                                        => throw new Exception(s"Missing handler for generating value of schema ${schema.toString()}")
     } // scalafmt: { maxColumn = 120 }
 
+
+  //TODO understand the syntax here `Schema.Case[_]*` --- is the star for handling more parameters within the `Case`
+  // object?
   private def genEnum[Z](cases: Schema.Case[Z, _]*) =
     Gen.elements(cases: _*).flatMap(c => gen(c.schema).map(_.asInstanceOf[Z]))
 
