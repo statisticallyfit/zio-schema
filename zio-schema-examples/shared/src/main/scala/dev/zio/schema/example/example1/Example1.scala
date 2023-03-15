@@ -58,29 +58,42 @@ object ManualConstruction {
     construct0 = (number, bankCode) => PaymentMethod.WireTransfer(number, bankCode)
   )
 
-  val schemaPaymentMethodCreditCard: Schema[CreditCard] = Schema.CaseClass3[String, Int, Int, CreditCard](
-    TypeId.parse("dev.zio.schema.example.example1.Domain.PaymentMethod.CreditCard"),
-    field01 = Schema.Field[CreditCard, String](
-      "number",
-      Schema.primitive[String],
-      get0 = _.number,
-      set0 = (p, v) => p.copy(number = v)
-    ),
-    field02 = Schema.Field[CreditCard, Int](
-      "expirationMonth",
-      Schema.primitive[Int],
-      get0 = _.expirationMonth,
-      set0 = (p, v) => p.copy(expirationMonth = v)
-    ),
-    field03 = Schema.Field[CreditCard, Int](
-      "expirationYear",
-      Schema.primitive[Int],
-      get0 = _.expirationYear,
-      set0 = (p, v) => p.copy(expirationYear = v)
-    ),
-    construct0 =
-      (number, expirationMonth, expirationYear) => PaymentMethod.CreditCard(number, expirationMonth, expirationYear)
+  //-----------------------------------------------
+
+  val typeId_creditCard: TypeId = TypeId.parse("dev.zio.schema.example.example1.Domain.PaymentMethod.CreditCard")
+  val field1_creditCard: Field[CreditCard, String] = Schema.Field[CreditCard, String](
+    name0 = "number",
+    schema0 = Schema.primitive[String],
+    //get0: (R => A) --- (CreditCard => String)
+    get0 = (r:CreditCard) => r.number,
+    // set0: (R, A) => R ----- (CreditCard, String) => CreditCard
+    set0 = (cc: CreditCard, s: String) => cc.copy(number = s)
   )
+  val field2_creditCard: Field[CreditCard, RuntimeFlags] = Schema.Field[CreditCard, Int](
+    name0 = "expirationMonth",
+    Schema.primitive[Int],
+    get0 = (cc: CreditCard) => cc.expirationMonth,
+    set0 = (cc: CreditCard, rf: RuntimeFlags) => cc.copy(expirationMonth = rf)
+  )
+  val field3_creditCard: Field[CreditCard, RuntimeFlags] = Schema.Field[CreditCard, Int](
+    "expirationYear",
+    Schema.primitive[Int],
+    get0 = (cc: CreditCard) => cc.expirationYear,
+    set0 = (cc: CreditCard, rf: RuntimeFlags) => cc.copy(expirationYear = rf)
+  )
+  val construct0_creditCard: (String, Int, Int) => CreditCard =
+    (number: String, expirationMonth: Int, expirationYear: Int) =>
+      PaymentMethod.CreditCard(number, expirationMonth, expirationYear)
+
+  val schemaPaymentMethodCreditCard: Schema[CreditCard] = Schema.CaseClass3[String, Int, Int, CreditCard](
+    id0 = typeId_creditCard,
+    field01 = field1_creditCard,
+    field02 = field2_creditCard,
+    field03 = field3_creditCard,
+    construct0 = construct0_creditCard
+  )
+
+  //-----------------------------------------------
 
   val schemaPaymentMethod: Schema[PaymentMethod] =
     Schema.Enum2[PaymentMethod.CreditCard, PaymentMethod.WireTransfer, PaymentMethod](
@@ -93,6 +106,7 @@ object ManualConstruction {
         isCase = _.isInstanceOf[PaymentMethod.CreditCard],
         annotations = Chunk.empty
       ),
+      // TODO - meaning of R => A construct types? what do they want to construct to?
       case2 = Case[PaymentMethod, PaymentMethod.WireTransfer](
         id = "WireTransfer",
         schema = schemaPaymentMethodWireTransfer,
