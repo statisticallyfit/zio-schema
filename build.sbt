@@ -139,7 +139,12 @@ lazy val zioSchemaDerivation = crossProject(JSPlatform, JVMPlatform)
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, _)) =>
           Seq(
-            "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
+               // NOTE: @statisticallyfit - erased the provided part so it would get imported in the file
+            "org.scala-lang" % "scala-reflect" % scalaVersion.value, //% Provided
+               // NOTE @statisticallyfit - added these logging libraries
+             "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5", // HELP - using version 3.9.5 for scala
+               // .version 2.13.10 but not sure how this zio would know
+
           )
         case _ => Seq()
       }
